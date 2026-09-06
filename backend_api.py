@@ -135,6 +135,25 @@ def get_sessions():
     return out
 
 
+@app.get("/trend")
+def get_confidence_trend():
+    """Tren rata-rata keyakinan diri per tanggal, dipakai grafik batang
+    di halaman Progress (dibuat karena frontend/Lovable memanggil
+    endpoint ini secara eksplisit -- lihat catatan di lingo-data.ts)."""
+    rows = db.q(
+        "SELECT date, avg_metacog FROM sessions "
+        "WHERE items_reviewed > 0 AND avg_metacog IS NOT NULL "
+        "ORDER BY date ASC"
+    )
+    by_date: dict[str, list[float]] = {}
+    for r in rows:
+        by_date.setdefault(r["date"], []).append(r["avg_metacog"])
+    return [
+        {"date": d, "avg": sum(vals) / len(vals)}
+        for d, vals in sorted(by_date.items())
+    ]
+
+
 class CreateSessionResponse(BaseModel):
     id: str
 
